@@ -1,0 +1,19 @@
+{
+  "name": "cassowary",
+  "version": "1.0.0",
+  "description": "A simple programming language",
+  "type": "module",
+  "main": "src/cassowary.js",
+  "scripts": {
+    "test": "c8 node --test test/**/*.test.js"
+  },
+  "keywords": [],
+  "author": "rtoal",
+  "license": "MIT",
+  "dependencies": {
+    "ohm-js": "^17.1.0"
+  },
+  "devDependencies": {
+    "c8": "^10.1.3"
+  }
+}
