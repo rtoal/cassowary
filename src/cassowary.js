@@ -1,22 +1,20 @@
-import * as fs from "fs";
-import * as ohm from "ohm-js";
+// Cassowary interpreter
 
-// Read the contents of the file cassowary.ohm into a string
-const grammar = ohm.grammar(fs.readFileSync("src/cassowary.ohm", "utf8"));
+import parse from "./parser.js";
+import interpret from "./interpreter.js";
 
-const interpreter = grammar.createSemantics();
-interpreter.addOperation("eval", {
-  Program(statements) {
-    for (const statement of statments.children) {
-      statement.eval();
-    }
-  },
-});
+// Check that the user has provided a filename as an argument
+if (process.argv.length !== 3) {
+  console.error("Usage: node src/cassowary.js FILENAME");
+  process.exit(1);
+}
 
-const sourceCode = process.argv[2];
-const match = grammar.match(sourceCode);
-if (match.succeeded()) {
-  interpreter(match).eval();
-} else {
-  console.error(match.message);
+try {
+  // Syntax
+  const match = parse(process.argv[2]);
+  // Semantics
+  interpret(match);
+} catch (e) {
+  console.error(e);
+  process.exit(1);
 }
