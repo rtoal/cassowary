@@ -1,5 +1,6 @@
 // Cassowary interpreter
 
+import * as fs from "fs";
 import parse from "./parser.js";
 import interpret from "./interpreter.js";
 
@@ -10,9 +11,8 @@ if (process.argv.length !== 3) {
 }
 
 try {
-  // Syntax
-  const match = parse(process.argv[2]);
-  // Semantics
+  const sourceCode = fs.readFileSync(process.argv[2], "utf8");
+  const match = parse(sourceCode);
   interpret(match);
 } catch (e) {
   console.error(e);

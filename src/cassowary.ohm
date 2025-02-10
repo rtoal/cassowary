@@ -4,7 +4,7 @@ Cassowary {
             | PrintStmt
             | WhileStmt
             | IfStmt
-            | break ";"                   --break
+            | break ";"                       --break
             | AssignmentStmt
             | "++" Primary_id ";"             --increment
   VarDec    = let id "=" Exp ";"
