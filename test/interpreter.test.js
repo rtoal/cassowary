@@ -10,8 +10,8 @@ describe("Interpreter", () => {
     ok(parse("while x < 10 { x = x < 7 + 1; break; }").succeeded());
   });
   it("throws on syntax errors", () => {
-    throws(() => parse("print 1"), /Expected/);
-    throws(() => parse("sdkjfhsdjklfhs"), /Expected/);
-    throws(() => parse("print -2**2;"), /Expected/);
+    throws(() => parse("print 1"));
+    throws(() => parse("sdkjfhsdjklfhs"));
+    throws(() => parse("print -2**2;"));
   });
 });

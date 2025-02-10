@@ -1,8 +1,8 @@
-// Cassowary interpreter
+// Cassowary compiler
 
 import * as fs from "fs";
 import parse from "./parser.js";
-import interpret from "./interpreter.js";
+import translate from "./translator.js";
 
 // Check that the user has provided a filename as an argument
 if (process.argv.length !== 3) {
@@ -13,8 +13,9 @@ if (process.argv.length !== 3) {
 try {
   const sourceCode = fs.readFileSync(process.argv[2], "utf8");
   const match = parse(sourceCode);
-  interpret(match);
+  const target = translate(match);
+  console.log(target.join("\n"));
 } catch (e) {
-  console.error(e);
+  console.error(`${e}`);
   process.exit(1);
 }

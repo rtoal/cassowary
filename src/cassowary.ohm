@@ -14,14 +14,14 @@ Cassowary {
   WhileStmt = while Exp Block
   Block     = "{" Stmt* "}"
   
-  Exp       = Condition relop Condition   --test
+  Exp       = Condition relop Condition  --test
             | Condition
-  Condition = Exp "+" Term         --add
-            | Exp "-" Term         --sub
+  Condition = Exp "+" Term               --add
+            | Exp "-" Term               --sub
             | Term
-  Term      = Term "*" Factor      --mul
-            | Term "/" Factor      --div
-            | Term "%" Factor      --mod
+  Term      = Term "*" Factor            --mul
+            | Term "/" Factor            --div
+            | Term "%" Factor            --mod
             | Factor
   Factor    = Primary ("**") Factor      --exp
             | "-" Primary                --neg

@@ -1,0 +1,5 @@
+let dog = 3;
+let dog = 5;
+print 1;
+print dog;
+print 2;
