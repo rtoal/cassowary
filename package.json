@@ -11,6 +11,7 @@
   "author": "rtoal",
   "license": "MIT",
   "dependencies": {
+    "graph-stringify": "^1.1.0",
     "ohm-js": "^17.1.0"
   },
   "devDependencies": {

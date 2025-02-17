@@ -4,6 +4,7 @@
 // pretty much everything at compile time.
 
 import * as fs from "fs";
+import stringify from "graph-stringify";
 import parse from "./parser.js";
 import analyze from "./analyzer.js";
 import translate from "./translator.js";
@@ -18,7 +19,8 @@ if (process.argv.length !== 3) {
 const sourceCode = fs.readFileSync(process.argv[2], "utf8");
 const match = parse(sourceCode);
 const program = analyze(match);
-const target = translate(program);
+console.log(stringify(program, "kind"));
+// const target = translate(program);
 // console.log(target.join("\n"));
 // } catch (e) {
 //   console.error(`${e}`);

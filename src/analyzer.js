@@ -38,7 +38,7 @@ export default function analyze(match) {
     check(locals.has(name), `Undeclared variable: ${name}`, parseTreeNode);
   }
 
-  const translator = grammar.createSemantics().addOperation("analyze", {
+  const analyzer = grammar.createSemantics().addOperation("analyze", {
     Program(statements) {
       return core.program(statements.children.map((s) => s.analyze()));
     },
@@ -75,13 +75,17 @@ export default function analyze(match) {
       return statements.children.map((s) => s.analyze());
     },
     Exp_test(left, op, right) {
-      // TODO: This badly needs type checking
-      return core.binaryExpression(
-        op.sourceString,
-        left.analyze(),
-        right.analyze(),
-        "boolean"
-      );
+      const x = left.analyze();
+      const y = right.analyze();
+      // TODO: THIS IS GOOD FOR NOW BUT MUST CHANGE WHEN WE
+      // ADD STRINGS, FUNCTIONS, ARRAYS, AND OBJECTS
+      if (op.sourceString === "==" || op.sourceString === "!=") {
+        check(x.type === y.type, `Type mismatch`, op);
+      } else {
+        checkNumber(x, left);
+        checkNumber(y, right);
+      }
+      return core.binaryExpression(op.sourceString, x, y, "boolean");
     },
     Condition_add(left, _op, right) {
       const x = left.analyze();
@@ -148,8 +152,7 @@ export default function analyze(match) {
     },
   });
 
-  translator(match).analyze();
-  return target;
+  return analyzer(match).analyze();
 }
 
 Number.prototype.type = "number";
