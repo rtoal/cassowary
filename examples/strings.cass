@@ -1,0 +1,7 @@
+let s = "hello";
+
+print(s + " world");
+print(2 + 8);
+
+print("hello" + " world");
+print("hello" * 3);

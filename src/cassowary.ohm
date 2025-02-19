@@ -27,10 +27,14 @@ Cassowary {
             | "-" Primary                --neg
             | Primary
   Primary   = numeral
-            | id                         --id
             | true                       --true
             | false                      --false
+            | stringlit                  --string
+            | Primary "[" Exp "]"        --subscript
+            | id                         --id
+            | "[" ListOf<Exp, ","> "]"   --array
             | "(" Exp ")"                --parens
+
   
   let       = "let" ~idchar
   print     = "print" ~idchar
@@ -44,5 +48,9 @@ Cassowary {
   id        = ~keyword letter idchar*
   idchar    = letter | digit | "_"
   numeral   = digit+ ("." digit+)? (("E"|"e") ("+"|"-")? digit+)?
+  stringlit = "\"" (~"\"" any)* "\""
+
   relop     = "<=" | "<" | "==" | "!=" | ">=" | ">"
+
+  space    += "//" (~"\n" any)*          --comment
 }

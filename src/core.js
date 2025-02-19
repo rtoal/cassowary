@@ -69,6 +69,23 @@ export function unaryExpression(op, operand, type) {
   };
 }
 
+export function arrayExpression(elements, type) {
+  return {
+    kind: "ArrayExpression",
+    elements,
+    type,
+  };
+}
+
+export function subscriptExpression(array, index, type) {
+  return {
+    kind: "SubscriptExpression",
+    array,
+    index,
+    type,
+  };
+}
+
 export function whileStatement(test, body) {
   return {
     kind: "WhileStatement",
