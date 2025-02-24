@@ -1,5 +1,5 @@
 let x = 1;
-let rat = x + 8 + 7 + x;
-let found = true;
-while (7 < 2) { print rat; }
-print(1 + 2 + 3);
+//let rat = x + 8 + 7 + x;
+//const found = true;
+//while (7 < 2) { print rat; }
+//print(1 + 2 + 3);

@@ -1,0 +1,8 @@
+let x = "dog";
+
+fnc addTwo(y: number) = y + 2;
+
+print(y);
+
+
+// fnc isEmpty(a: string[]) = #a == 0;

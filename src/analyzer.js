@@ -63,6 +63,10 @@ export default function analyze(match) {
     check(locals.has(name), `Undeclared variable: ${name}`, parseTreeNode);
   }
 
+  function checkIsMutable(variable, parseTreeNode) {
+    check(variable.mutable, `Assignment to immutable variable`, parseTreeNode);
+  }
+
   const analyzer = grammar.createSemantics().addOperation("analyze", {
     Program(statements) {
       return core.program(statements.children.map((s) => s.analyze()));
@@ -74,12 +78,34 @@ export default function analyze(match) {
     Stmt_break(_break, _semi) {
       return core.breakStatement();
     },
-    VarDec(_let, id, _eq, exp, _semi) {
+    VarDec(qualifier, id, _eq, exp, _semi) {
       checkNotDeclared(id.sourceString, id);
       const initializer = exp.analyze();
-      const variable = core.variable(id.sourceString, initializer.type, true);
+      const mutable = qualifier.sourceString === "let";
+      const variable = core.variable(
+        id.sourceString,
+        initializer.type,
+        mutable
+      );
       locals.set(id.sourceString, variable);
       return core.variableDeclaration(variable, initializer);
+    },
+    FunDec(_fun, id, params, _eq, exp, _semi) {
+      checkNotDeclared(id.sourceString, id);
+      const parameters = params.analyze();
+      const body = exp.analyze();
+      const fun = core.función(id.sourceString, parameters, body.type);
+      locals.set(id.sourceString, fun);
+      return core.functionDeclaration(fun, body);
+    },
+    Params(_open, params, _close) {
+      return params.asIteration().children.map((p) => p.analyze());
+    },
+    Param(id, _colon, type) {
+      checkNotDeclared(id.sourceString, id);
+      const param = core.variable(id.sourceString, type.sourceString, false);
+      locals.set(id.sourceString, param);
+      return param;
     },
     PrintStmt(_print, exp, _semi) {
       const argument = exp.analyze();
@@ -89,6 +115,7 @@ export default function analyze(match) {
       const source = exp.analyze();
       const target = id.analyze();
       checkSameTypes(source, target, id);
+      checkIsMutable(target, id);
       return core.assignmentStatement(source, target);
     },
     WhileStmt(_while, exp, block) {
@@ -152,7 +179,22 @@ export default function analyze(match) {
       return exp.analyze();
     },
     Factor_neg(_op, operand) {
+      checkNumber(operand.analyze(), operand);
       return unaryExpression("-", operand.analyze(), "number");
+    },
+    Factor_not(_op, operand) {
+      checkBoolean(operand.analyze(), operand);
+      return unaryExpression("!", operand.analyze(), "boolean");
+    },
+    Factor_len(_op, operand) {
+      const e = operand.analyze();
+      check(
+        // TODO FIX THE DISGUSTING HACK BELOW
+        e.type === "string" || e.type.endsWith("[]"),
+        `Expected string or array`,
+        operand
+      );
+      return core.unaryExpression("#", e, "number");
     },
     Factor_exp(left, _op, right) {
       return core.binaryExpression(

@@ -1,13 +1,21 @@
 Cassowary {
   Program   = Stmt+
   Stmt      = VarDec
+            | FunDec
             | PrintStmt
             | WhileStmt
             | IfStmt
             | break ";"                       --break
             | AssignmentStmt
             | "++" Primary_id ";"             --increment
-  VarDec    = let id "=" Exp ";"
+  VarDec    = (let | const) id "=" Exp ";"
+  FunDec    = fnc id Params "=" Exp ";"
+  Params    = "(" ListOf<Param, ","> ")"
+  Param     = id ":" Type
+  Type      = Type "[]"                       --array
+            | "number" 
+            | "bool" 
+            | "string"
   PrintStmt = print Exp ";"
   AssignmentStmt = Primary_id "=" Exp ";"
   IfStmt    = if Exp Block (else (Block | IfStmt))?
@@ -25,6 +33,8 @@ Cassowary {
             | Factor
   Factor    = Primary ("**") Factor      --exp
             | "-" Primary                --neg
+            | "!" Primary                --not
+            | "#" Primary                --len
             | Primary
   Primary   = numeral
             | true                       --true
@@ -35,8 +45,9 @@ Cassowary {
             | "[" ListOf<Exp, ","> "]"   --array
             | "(" Exp ")"                --parens
 
-  
   let       = "let" ~idchar
+  const     = "const" ~idchar
+  fnc       = "fnc" ~idchar
   print     = "print" ~idchar
   while     = "while" ~idchar
   if        = "if" ~idchar
@@ -44,7 +55,8 @@ Cassowary {
   break     = "break" ~idchar
   true      = "true" ~idchar
   false     = "false" ~idchar
-  keyword   = print | while | if | else | break | let | true | false
+  keyword   = let | const | fnc | print | while | if | else
+            | break | true | false
   id        = ~keyword letter idchar*
   idchar    = letter | digit | "_"
   numeral   = digit+ ("." digit+)? (("E"|"e") ("+"|"-")? digit+)?
