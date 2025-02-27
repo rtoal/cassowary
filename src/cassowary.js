@@ -1,28 +1,34 @@
-// Cassowary compiler
+#! /usr/bin/env node
 
-// Cassowary is completely statically typed language. Also it checks
-// pretty much everything at compile time.
-
-import * as fs from "fs";
+import * as fs from "node:fs/promises";
 import stringify from "graph-stringify";
-import parse from "./parser.js";
-import analyze from "./analyzer.js";
-import translate from "./translator.js";
+import compile from "./compiler.js";
 
-// Check that the user has provided a filename as an argument
-if (process.argv.length !== 3) {
-  console.error("Usage: node src/cassowary.js FILENAME");
-  process.exit(1);
+const help = `Cassowary compiler
+
+Syntax: cassowary <filename> <outputType>
+
+Prints to stdout according to <outputType>, which must be one of:
+
+  parsed     a message that the program was matched ok by the grammar
+  analyzed   the statically analyzed representation
+  optimized  the optimized semantically analyzed representation
+  js         the translation to JavaScript
+`;
+
+async function compileFromFile(filename, outputType) {
+  // try {
+  const buffer = await fs.readFile(filename);
+  const compiled = compile(buffer.toString(), outputType);
+  console.log(stringify(compiled, "kind") || compiled);
+  // } catch (e) {
+  //   console.error(`\u001b[31m${e}\u001b[39m`);
+  //   process.exitCode = 1;
+  // }
 }
 
-// try {
-const sourceCode = fs.readFileSync(process.argv[2], "utf8");
-const match = parse(sourceCode);
-const program = analyze(match);
-console.log(stringify(program, "kind"));
-// const target = translate(program);
-// console.log(target.join("\n"));
-// } catch (e) {
-//   console.error(`${e}`);
-//   process.exit(1);
-// }
+if (process.argv.length !== 4) {
+  console.log(help);
+} else {
+  compileFromFile(process.argv[2], process.argv[3]);
+}

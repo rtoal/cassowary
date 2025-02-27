@@ -3,12 +3,29 @@ import * as core from "./core.js";
 export default function analyze(match) {
   const grammar = match.matcher.grammar;
 
-  const locals = new Map(); // string -> entity
-  const target = [];
-
-  function emit(line) {
-    target.push(line);
+  class Context {
+    constructor(parent = null) {
+      this.locals = new Map();
+      this.parent = parent;
+    }
+    add(name, entity) {
+      this.locals.set(name, entity);
+    }
+    has(name) {
+      return this.locals.has(name);
+    }
+    lookup(name) {
+      return this.locals.get(name) ?? (this.parent && this.parent.lookup(name));
+    }
+    newChildContext() {
+      return new Context(this);
+    }
   }
+
+  // THIS IS THE CURRENT CONTEXT THAT WE ARE TRACKING
+  let context = new Context();
+
+  const target = [];
 
   function check(condition, message, parseTreeNode) {
     if (!condition) {
@@ -34,6 +51,15 @@ export default function analyze(match) {
     );
   }
 
+  function checkArrayOrString(e, parseTreeNode) {
+    check(
+      // TODO FIX DISGUSTING HACK BELOW
+      e.type === "string" || e.type.endsWith("[]"),
+      `Expected string or array`,
+      parseTreeNode
+    );
+  }
+
   function checkSameTypes(x, y, parseTreeNode) {
     check(x.type === y.type, `Operands must have the same type`, parseTreeNode);
   }
@@ -53,14 +79,10 @@ export default function analyze(match) {
 
   function checkNotDeclared(name, parseTreeNode) {
     check(
-      !locals.has(name),
+      !context.has(name),
       `Variable already declared: ${name}`,
       parseTreeNode
     );
-  }
-
-  function checkDeclared(name, parseTreeNode) {
-    check(locals.has(name), `Undeclared variable: ${name}`, parseTreeNode);
   }
 
   function checkIsMutable(variable, parseTreeNode) {
@@ -87,15 +109,17 @@ export default function analyze(match) {
         initializer.type,
         mutable
       );
-      locals.set(id.sourceString, variable);
+      context.add(id.sourceString, variable);
       return core.variableDeclaration(variable, initializer);
     },
     FunDec(_fun, id, params, _eq, exp, _semi) {
       checkNotDeclared(id.sourceString, id);
+      context = context.newChildContext();
       const parameters = params.analyze();
       const body = exp.analyze();
+      context = context.parent;
       const fun = core.función(id.sourceString, parameters, body.type);
-      locals.set(id.sourceString, fun);
+      context.add(id.sourceString, fun);
       return core.functionDeclaration(fun, body);
     },
     Params(_open, params, _close) {
@@ -104,7 +128,7 @@ export default function analyze(match) {
     Param(id, _colon, type) {
       checkNotDeclared(id.sourceString, id);
       const param = core.variable(id.sourceString, type.sourceString, false);
-      locals.set(id.sourceString, param);
+      context.add(id.sourceString, param);
       return param;
     },
     PrintStmt(_print, exp, _semi) {
@@ -188,12 +212,7 @@ export default function analyze(match) {
     },
     Factor_len(_op, operand) {
       const e = operand.analyze();
-      check(
-        // TODO FIX THE DISGUSTING HACK BELOW
-        e.type === "string" || e.type.endsWith("[]"),
-        `Expected string or array`,
-        operand
-      );
+      checkArrayOrString(e, operand);
       return core.unaryExpression("#", e, "number");
     },
     Factor_exp(left, _op, right) {
@@ -211,18 +230,16 @@ export default function analyze(match) {
       return core.arrayExpression(contents, `${elementType}[]`);
     },
     Primary_subscript(array, _open, index, _close) {
-      return core.subscriptExpression(
-        array.analyze(),
-        index.analyze(),
-        "number"
-      );
+      const e = array.analyze();
+      checkArrayOrString(e, array);
+      return core.subscriptExpression(e, index.analyze(), "number");
     },
     numeral(digits, _dot, _fractional, _e, _sign, _exponent) {
       return Number(this.sourceString);
     },
     id(_first, _rest) {
-      const entity = locals.get(this.sourceString);
-      checkDeclared(this.sourceString, this);
+      const entity = context.lookup(this.sourceString);
+      check(entity, `${this.sourceString} not declared`, this);
       return entity;
     },
     true(_) {

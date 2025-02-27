@@ -1,8 +1,5 @@
-let x = "dog";
+let switch = 100;
 
-fnc addTwo(y: number) = y + 2;
+fnc addX(y: number) = y * switch + 5;
 
-print(y);
-
-
-// fnc isEmpty(a: string[]) = #a == 0;
+print(switch);
