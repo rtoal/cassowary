@@ -6,7 +6,16 @@ import parse from "../src/parser.js";
 const syntaxChecks = [
   ["simplest syntactically correct program", "break;"],
   ["multiple statements", "print(1);\nbreak;\nx=5;\nbreak;\n++x;"],
-  ["variable declarations", "let e=99*1;\nconst z=false;"],
+  ["variable declarations", "let e=99*1;\nconst z=nil;"],
+  [
+    "variable declarations with types",
+    "let e:number=99*1;\nconst z:bool=false;",
+  ],
+  [
+    "variable declarations with array types",
+    "let e:number[][]=99*1;\nconst z:bool[][]=false;",
+  ],
+  ["variable declarations with optional types", "let e:number? = 2;"],
   ["function with no params", "fnc f() = 3;"],
   ["function with one param", "fnc f(x: number) = x;"],
   ["function with two params", `fnc f(x: number, y: bool) = "hello";`],

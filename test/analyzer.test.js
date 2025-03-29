@@ -6,6 +6,7 @@ import analyze from "../src/analyzer.js";
 // Programs that are semantically correct
 const semanticChecks = [
   ["variable declarations", 'let x = 1; let y = "false";'],
+  ["vardecl with types", 'let x: number = 1; let y: string = "false";'],
   ["complex array types", "fnc f(x: number[][]) = 3;"],
   ["increment", "let x = 10; ++x;"],
   ["initialize with empty array", "let a = [];"],
@@ -28,6 +29,8 @@ const semanticChecks = [
     "fnc f(x: number[][])=3; print(f([[1],[2]]));",
   ],
   ["outer variable", "let x=1; while(false) {print(x);}"],
+  ["vardec with nil", "let x: number? = nil;"],
+  ["vardec with optional type", "let x: number? = 55;"],
 ];
 
 // Programs that are syntactically correct but have semantic errors
@@ -76,7 +79,7 @@ const semanticErrors = [
     "print([3,false]);",
     /All elements must have the same type/,
   ],
-  ["call of nonfunction", "let x = 1;\nprint(x());", /x not a function/],
+  ["call of non-function", "let x = 1;\nprint(x());", /x not a function/],
   [
     "Too many args",
     "fnc f(x: number) = 3; print(f(1,2));",
@@ -91,6 +94,12 @@ const semanticErrors = [
     "Parameter type mismatch",
     "fnc f(x: number) = 3; print(f(false));",
     /Operands must have the same type/,
+  ],
+  ["nil as initializer", "let x = nil;", /Cannot use nil without a type/],
+  [
+    "optional type mismatch",
+    "let x: number? = false;",
+    /Cannot assign boolean to number?/,
   ],
 ];
 

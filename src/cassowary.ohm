@@ -1,71 +1,76 @@
 Cassowary {
-  Program   = Stmt+
-  Stmt      = VarDec
-            | FunDec
-            | PrintStmt
-            | WhileStmt
-            | IfStmt
-            | break ";"                       --break
-            | AssignmentStmt
-            | "++" (Primary_subscript | Primary_id) ";"  --increment
-  VarDec    = (let | const) id "=" Exp ";"
-  FunDec    = fnc id Params "=" Exp ";"
-  Params    = "(" ListOf<Param, ","> ")"
-  Param     = id ":" Type
-  Type      = Type "[]"                       --array
-            | "number" 
-            | "bool" 
-            | "string"
-  PrintStmt = print Exp ";"
-  AssignmentStmt = (Primary_subscript | Primary_id) "=" Exp ";"
-  IfStmt    = if Exp Block else Block     --long
-            | if Exp Block else IfStmt    --elsif
-            | if Exp Block                --short
-  WhileStmt = while Exp Block
-  Block     = "{" Stmt* "}"
+  Program    = Stmt+
+  Stmt       = VarDec
+             | FunDec
+             | PrintStmt
+             | WhileStmt
+             | IfStmt
+             | break ";"                       --break
+             | Assignment
+             | Increment
+  VarDec     = (let | const) id ":" Type "=" Exp ";"  --withtype
+             | (let | const) id "=" Exp ";"           --inference
+  FunDec     = fnc id Params "=" Exp ";"
+  Params     = "(" ListOf<Param, ","> ")"
+  Param      = id ":" Type
+  Type       = Type "[]"                       --array
+             | Type "?"                        --optional
+             | "number" 
+             | "bool" 
+             | "string"
+  PrintStmt  = print Exp ";"
+  Assignment = (Primary_subscript | Primary_id) "=" Exp ";"
+  Increment  = "++" (Primary_subscript | Primary_id) ";"
+  IfStmt     = if Exp Block else Block     --long
+             | if Exp Block else IfStmt    --elsif
+             | if Exp Block                --short
+  WhileStmt  = while Exp Block
+  Block      = "{" Stmt* "}"
   
-  Exp       = Condition relop Condition  --test
-            | Condition
-  Condition = Exp "+" Term               --add
-            | Exp "-" Term               --sub
-            | Term
-  Term      = Term "*" Factor            --mul
-            | Term "/" Factor            --div
-            | Term "%" Factor            --mod
-            | Factor
-  Factor    = Primary ("**") Factor      --exp
-            | "-" Primary                --neg
-            | "!" Primary                --not
-            | "#" Primary                --len
-            | Primary
-  Primary   = numeral
-            | true ~"="                  --true
-            | false ~"="                 --false
-            | stringlit                  --string
-            | Primary "[" Exp "]"        --subscript
-            | id "(" ListOf<Exp, ","> ")"  --call
-            | id                         --id
-            | "[" ListOf<Exp, ","> "]"   --array
-            | "(" Exp ")"                --parens
+  Exp        = Condition relop Condition  --test
+             | Condition
+  Condition  = Exp "+" Term               --add
+             | Exp "-" Term               --sub
+             | Term
+  Term       = Term "*" Factor            --mul
+             | Term "/" Factor            --div
+             | Term "%" Factor            --mod
+             | Factor
+  Factor     = Primary ("**") Factor      --exp
+             | "-" Primary                --neg
+             | "!" Primary                --not
+             | "#" Primary                --len
+             | Primary
+  Primary    = numeral
+             | true ~"="                  --true
+             | false ~"="                 --false
+             | nil ~"="                   --nil
+             | stringlit                  --string
+             | Primary "[" Exp "]"        --subscript
+             | id "(" ListOf<Exp, ","> ")"  --call
+             | id                         --id
+             | "[" ListOf<Exp, ","> "]"   --array
+             | "(" Exp ")"                --parens
 
-  let       = "let" ~idchar
-  const     = "const" ~idchar
-  fnc       = "fnc" ~idchar
-  print     = "print" ~idchar
-  while     = "while" ~idchar
-  if        = "if" ~idchar
-  else      = "else" ~idchar
-  break     = "break" ~idchar
-  true      = "true" ~idchar
-  false     = "false" ~idchar
-  keyword   = let | const | fnc | print | while | if | else
-            | break | true | false
-  id        = ~keyword letter idchar*
-  idchar    = letter | digit | "_"
-  numeral   = digit+ ("." digit+)? (("E"|"e") ("+"|"-")? digit+)?
-  stringlit = "\"" (~"\"" any)* "\""
+  let        = "let" ~idchar
+  const      = "const" ~idchar
+  fnc        = "fnc" ~idchar
+  print      = "print" ~idchar
+  while      = "while" ~idchar
+  if         = "if" ~idchar
+  else       = "else" ~idchar
+  break      = "break" ~idchar
+  true       = "true" ~idchar
+  false      = "false" ~idchar
+  nil        = "nil" ~idchar
+  keyword    = let | const | fnc | print | while | if | else
+             | break | true | false | nil
+  id         = ~keyword letter idchar*
+  idchar     = letter | digit | "_"
+  numeral    = digit+ ("." digit+)? (("E"|"e") ("+"|"-")? digit+)?
+  stringlit  = "\"" (~"\"" any)* "\""
 
-  relop     = "<=" | "<" | "==" | "!=" | ">=" | ">"
+  relop      = "<=" | "<" | "==" | "!=" | ">=" | ">"
 
-  space    += "//" (~"\n" any)*          --comment
+  space     += "//" (~"\n" any)*          --comment
 }

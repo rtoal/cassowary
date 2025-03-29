@@ -61,8 +61,28 @@ export default function analyze(match) {
     );
   }
 
+  function checkNotNil(e, parseTreeNode) {
+    check(
+      e.kind !== "NilLiteral",
+      `Cannot use nil without a type`,
+      parseTreeNode
+    );
+  }
+
   function checkSameTypes(x, y, parseTreeNode) {
     check(x.type === y.type, `Operands must have the same type`, parseTreeNode);
+  }
+
+  function checkAssignable(source, destType, parseTreeNode) {
+    // Example: source = nil, destType = "number?"
+    // Example: source = 50, destType = "number?"
+    check(
+      (source.kind === "NilLiteral" && destType.endsWith("?")) ||
+        source.type === destType ||
+        destType === `${source.type}?`,
+      `Cannot assign ${source.type} to ${destType}`,
+      parseTreeNode
+    );
   }
 
   function checkAllElementsHaveSameType(elements, parseTreeNode) {
@@ -116,7 +136,7 @@ export default function analyze(match) {
     Program(statements) {
       return core.program(statements.children.map((s) => s.analyze()));
     },
-    Stmt_increment(_op, id, _semi) {
+    Increment(_op, id, _semi) {
       const variable = id.analyze();
       checkNumber(variable, id);
       return core.incrementStatement(variable);
@@ -125,13 +145,27 @@ export default function analyze(match) {
       check(context.inLoop, `Break can only appear in a loop`, breakKeyword);
       return core.breakStatement();
     },
-    VarDec(qualifier, id, _eq, exp, _semi) {
+    VarDec_inference(qualifier, id, _eq, exp, _semi) {
       checkNotDeclared(id.sourceString, id);
       const initializer = exp.analyze();
+      checkNotNil(initializer, id);
       const mutable = qualifier.sourceString === "let";
       const variable = core.variable(
         id.sourceString,
         initializer.type,
+        mutable
+      );
+      context.add(id.sourceString, variable);
+      return core.variableDeclaration(variable, initializer);
+    },
+    VarDec_withtype(qualifier, id, _colon, type, _eq, exp, _semi) {
+      checkNotDeclared(id.sourceString, id);
+      const initializer = exp.analyze();
+      const mutable = qualifier.sourceString === "let";
+      checkAssignable(initializer, type.sourceString, id);
+      const variable = core.variable(
+        id.sourceString,
+        type.sourceString,
         mutable
       );
       context.add(id.sourceString, variable);
@@ -160,7 +194,7 @@ export default function analyze(match) {
       const argument = exp.analyze();
       return core.printStatement(argument);
     },
-    AssignmentStmt(id, _eq, exp, _semi) {
+    Assignment(id, _eq, exp, _semi) {
       const source = exp.analyze();
       const target = id.analyze();
       checkSameTypes(source, target, id);
@@ -304,6 +338,9 @@ export default function analyze(match) {
     },
     false(_) {
       return false;
+    },
+    nil(_) {
+      return core.nilLiteral();
     },
     stringlit(_open, chars, _close) {
       return chars.sourceString;

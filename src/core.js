@@ -136,3 +136,10 @@ export function shortIfStatement(test, consequent) {
     consequent,
   };
 }
+
+export function nilLiteral() {
+  return {
+    kind: "NilLiteral",
+    type: "any?",
+  };
+}

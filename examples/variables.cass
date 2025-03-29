@@ -1,1 +1,2 @@
-let x=false;++x;
+let x: number? = nil;
+let y: number? = 5;
