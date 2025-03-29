@@ -103,6 +103,15 @@ export function subscriptExpression(array, index, type) {
   };
 }
 
+export function callExpression(callee, args, type) {
+  return {
+    kind: "CallExpression",
+    callee,
+    args,
+    type,
+  };
+}
+
 export function whileStatement(test, body) {
   return {
     kind: "WhileStatement",
@@ -111,9 +120,19 @@ export function whileStatement(test, body) {
   };
 }
 
-export function block(statements) {
+export function ifStatement(test, consequent, alternate) {
   return {
-    kind: "Block",
-    statements,
+    kind: "IfStatement",
+    test,
+    consequent,
+    alternate,
+  };
+}
+
+export function shortIfStatement(test, consequent) {
+  return {
+    kind: "ShortIfStatement",
+    test,
+    consequent,
   };
 }

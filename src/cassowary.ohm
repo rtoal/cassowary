@@ -7,7 +7,7 @@ Cassowary {
             | IfStmt
             | break ";"                       --break
             | AssignmentStmt
-            | "++" Primary_id ";"             --increment
+            | "++" (Primary_subscript | Primary_id) ";"  --increment
   VarDec    = (let | const) id "=" Exp ";"
   FunDec    = fnc id Params "=" Exp ";"
   Params    = "(" ListOf<Param, ","> ")"
@@ -17,8 +17,10 @@ Cassowary {
             | "bool" 
             | "string"
   PrintStmt = print Exp ";"
-  AssignmentStmt = Primary_id "=" Exp ";"
-  IfStmt    = if Exp Block (else (Block | IfStmt))?
+  AssignmentStmt = (Primary_subscript | Primary_id) "=" Exp ";"
+  IfStmt    = if Exp Block else Block     --long
+            | if Exp Block else IfStmt    --elsif
+            | if Exp Block                --short
   WhileStmt = while Exp Block
   Block     = "{" Stmt* "}"
   
@@ -37,10 +39,11 @@ Cassowary {
             | "#" Primary                --len
             | Primary
   Primary   = numeral
-            | true                       --true
-            | false                      --false
+            | true ~"="                  --true
+            | false ~"="                 --false
             | stringlit                  --string
             | Primary "[" Exp "]"        --subscript
+            | id "(" ListOf<Exp, ","> ")"  --call
             | id                         --id
             | "[" ListOf<Exp, ","> "]"   --array
             | "(" Exp ")"                --parens

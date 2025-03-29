@@ -4,8 +4,9 @@ export default function analyze(match) {
   const grammar = match.matcher.grammar;
 
   class Context {
-    constructor(parent = null) {
+    constructor(parent = null, inLoop = false) {
       this.locals = new Map();
+      this.inLoop = inLoop;
       this.parent = parent;
     }
     add(name, entity) {
@@ -17,8 +18,8 @@ export default function analyze(match) {
     lookup(name) {
       return this.locals.get(name) ?? (this.parent && this.parent.lookup(name));
     }
-    newChildContext() {
-      return new Context(this);
+    newChildContext(inLoop = false) {
+      return new Context(this, inLoop);
     }
   }
 
@@ -77,6 +78,17 @@ export default function analyze(match) {
     }
   }
 
+  function checkArgumentCountAndTypes(parameters, args, parseTreeNode) {
+    check(
+      parameters.length === args.length,
+      `Expected ${parameters.length} argument(s) but ${args.length} passed`,
+      parseTreeNode
+    );
+    for (let i = 0; i < parameters.length; i++) {
+      checkSameTypes(parameters[i], args[i], parseTreeNode);
+    }
+  }
+
   function checkNotDeclared(name, parseTreeNode) {
     check(
       !context.has(name),
@@ -85,8 +97,19 @@ export default function analyze(match) {
     );
   }
 
+  function isMutable(variable) {
+    return (
+      variable.mutable ||
+      (variable.kind == "SubscriptExpression" && isMutable(variable.array))
+    );
+  }
+
   function checkIsMutable(variable, parseTreeNode) {
-    check(variable.mutable, `Assignment to immutable variable`, parseTreeNode);
+    check(
+      isMutable(variable),
+      `Assignment to immutable variable`,
+      parseTreeNode
+    );
   }
 
   const analyzer = grammar.createSemantics().addOperation("analyze", {
@@ -95,9 +118,11 @@ export default function analyze(match) {
     },
     Stmt_increment(_op, id, _semi) {
       const variable = id.analyze();
+      checkNumber(variable, id);
       return core.incrementStatement(variable);
     },
-    Stmt_break(_break, _semi) {
+    Stmt_break(breakKeyword, _semi) {
+      check(context.inLoop, `Break can only appear in a loop`, breakKeyword);
       return core.breakStatement();
     },
     VarDec(qualifier, id, _eq, exp, _semi) {
@@ -142,10 +167,32 @@ export default function analyze(match) {
       checkIsMutable(target, id);
       return core.assignmentStatement(source, target);
     },
-    WhileStmt(_while, exp, block) {
+    IfStmt_long(_if, exp, block1, _else, block2) {
+      const test = exp.analyze();
+      checkBoolean(test, exp);
+      const consequent = block1.analyze();
+      const alternate = block2.analyze();
+      return core.ifStatement(test, consequent, alternate);
+    },
+    IfStmt_elsif(_if, exp, block, _else, trailingIfStatement) {
+      const test = exp.analyze();
+      checkBoolean(test, exp);
+      const consequent = block.analyze();
+      const alternate = trailingIfStatement.analyze();
+      return core.ifStatement(test, consequent, alternate);
+    },
+    IfStmt_short(_if, exp, block) {
       const test = exp.analyze();
       checkBoolean(test, exp);
       const body = block.analyze();
+      return core.shortIfStatement(test, body);
+    },
+    WhileStmt(_while, exp, block) {
+      const test = exp.analyze();
+      checkBoolean(test, exp);
+      context = context.newChildContext(context, true);
+      const body = block.analyze();
+      context = context.parent;
       return core.whileStatement(test, body);
     },
     Block(_open, statements, _close) {
@@ -159,8 +206,8 @@ export default function analyze(match) {
       if (op.sourceString === "==" || op.sourceString === "!=") {
         check(x.type === y.type, `Type mismatch`, op);
       } else {
-        checkNumber(x, left);
-        checkNumber(y, right);
+        checkNumberOrString(x, left);
+        checkNumberOrString(y, right);
       }
       return core.binaryExpression(op.sourceString, x, y, "boolean");
     },
@@ -204,11 +251,11 @@ export default function analyze(match) {
     },
     Factor_neg(_op, operand) {
       checkNumber(operand.analyze(), operand);
-      return unaryExpression("-", operand.analyze(), "number");
+      return core.unaryExpression("-", operand.analyze(), "number");
     },
     Factor_not(_op, operand) {
       checkBoolean(operand.analyze(), operand);
-      return unaryExpression("!", operand.analyze(), "boolean");
+      return core.unaryExpression("!", operand.analyze(), "boolean");
     },
     Factor_len(_op, operand) {
       const e = operand.analyze();
@@ -216,12 +263,11 @@ export default function analyze(match) {
       return core.unaryExpression("#", e, "number");
     },
     Factor_exp(left, _op, right) {
-      return core.binaryExpression(
-        "**",
-        left.analyze(),
-        right.analyze(),
-        "number"
-      );
+      const x = left.analyze();
+      const y = right.analyze();
+      checkNumber(x, left);
+      checkNumber(y, right);
+      return core.binaryExpression("**", x, y, "number");
     },
     Primary_array(open, elements, _close) {
       const contents = elements.asIteration().children.map((e) => e.analyze());
@@ -231,8 +277,19 @@ export default function analyze(match) {
     },
     Primary_subscript(array, _open, index, _close) {
       const e = array.analyze();
+      const i = index.analyze();
+      checkNumber(i, index);
       checkArrayOrString(e, array);
-      return core.subscriptExpression(e, index.analyze(), "number");
+      return core.subscriptExpression(e, index.analyze(), e.type.slice(0, -2));
+    },
+    Primary_call(id, _open, exps, _close) {
+      const fun = context.lookup(id.sourceString);
+      check(fun, `${id.sourceString} not declared`, id);
+      check(fun.kind === "Function", `${id.sourceString} not a function`, id);
+      const parameters = fun.parameters;
+      const args = exps.asIteration().children.map((a) => a.analyze());
+      checkArgumentCountAndTypes(parameters, args, id);
+      return core.callExpression(fun, args, fun.returnType);
     },
     numeral(digits, _dot, _fractional, _e, _sign, _exponent) {
       return Number(this.sourceString);
